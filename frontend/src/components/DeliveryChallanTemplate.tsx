@@ -20,18 +20,14 @@ export function DeliveryChallanTemplate({ order }: { order: Order }) {
             <h2 className="text-xl font-extrabold text-slate-900 sm:text-2xl">
               {brand.companyNameBn}
             </h2>
-            <p className="mt-2 text-sm font-bold text-slate-900 sm:text-base">
-              মাংসসহ গৃহের সব ধরনের মুদি সামগ্রী,
-            </p>
-            <p className="text-sm font-bold text-slate-900 sm:text-base">
-              প্রস্তুত ও বাজার উপযোগী পণ্য
-            </p>
-            <p className="text-sm font-bold text-slate-900 sm:text-base">
-              সরবরাহ করা হয় খুচরা / পাইকারী
-            </p>
-            <p className="text-sm font-bold text-slate-900 sm:text-base">
-              আপনার দোরগোড়ায় ডেলিভারি করা হয়।
-            </p>
+            {(brand.challanDescription ?? "").split("\n").map((line, i) => (
+              <p
+                key={i}
+                className="text-sm font-bold text-slate-900 sm:text-base"
+              >
+                {line}
+              </p>
+            ))}
             <p className="mt-4 text-xs text-slate-700 sm:text-sm">
               {brand.companyAddress}
             </p>

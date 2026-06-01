@@ -180,6 +180,9 @@ export function AppShell() {
   const [brandAddress, setBrandAddress] = useState(brand.companyAddress);
   const [brandHotline, setBrandHotline] = useState(brand.hotline);
   const [brandLogoUrl, setBrandLogoUrl] = useState(brand.logoUrl);
+  const [brandChallanDesc, setBrandChallanDesc] = useState(
+    brand.challanDescription ?? BRAND_DEFAULTS.challanDescription,
+  );
   const [dark] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("gom-theme") === "dark";
@@ -311,6 +314,10 @@ export function AppShell() {
                   setBrandAddress(brand.companyAddress);
                   setBrandHotline(brand.hotline);
                   setBrandLogoUrl(brand.logoUrl);
+                  setBrandChallanDesc(
+                    brand.challanDescription ??
+                      BRAND_DEFAULTS.challanDescription,
+                  );
                   setShowBrand(true);
                 }}
               >
@@ -335,6 +342,10 @@ export function AppShell() {
                   setBrandAddress(brand.companyAddress);
                   setBrandHotline(brand.hotline);
                   setBrandLogoUrl(brand.logoUrl);
+                  setBrandChallanDesc(
+                    brand.challanDescription ??
+                      BRAND_DEFAULTS.challanDescription,
+                  );
                   setShowBrand(true);
                 }}
               >
@@ -657,6 +668,10 @@ export function AppShell() {
                         setBrandAddress(brand.companyAddress);
                         setBrandHotline(brand.hotline);
                         setBrandLogoUrl(brand.logoUrl);
+                        setBrandChallanDesc(
+                          brand.challanDescription ??
+                            BRAND_DEFAULTS.challanDescription,
+                        );
                         setShowBrand(true);
                       }}
                     >
@@ -940,6 +955,20 @@ export function AppShell() {
                 placeholder={BRAND_DEFAULTS.hotline}
               />
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="brand-challan-desc">Challan description</Label>
+              <textarea
+                id="brand-challan-desc"
+                rows={4}
+                value={brandChallanDesc}
+                onChange={(e) => setBrandChallanDesc(e.target.value)}
+                placeholder={BRAND_DEFAULTS.challanDescription}
+                className="font-bn w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                Each line appears as a separate line on the challan header.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -961,6 +990,9 @@ export function AppShell() {
                   companyAddress:
                     brandAddress.trim() || BRAND_DEFAULTS.companyAddress,
                   hotline: brandHotline.trim() || BRAND_DEFAULTS.hotline,
+                  challanDescription:
+                    brandChallanDesc.trim() ||
+                    BRAND_DEFAULTS.challanDescription,
                 });
                 setShowBrand(false);
               }}

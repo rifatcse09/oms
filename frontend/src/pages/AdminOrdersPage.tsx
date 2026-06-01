@@ -98,6 +98,54 @@ function OrderCreatedByCell({ order }: { order: Order }) {
   );
 }
 
+function AssignModeratorSelect({
+  order,
+  onChanged,
+}: {
+  order: Order;
+  onChanged: () => void;
+}) {
+  const { listAccounts } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const moderators = listAccounts().filter(
+    (a) => a.role === "moderator" && a.isActive !== false,
+  );
+  if (!apiEnabled()) {
+    const assigned = moderators.find((m) => m.id === order.assignedModeratorId);
+    return (
+      <span className="text-xs text-slate-500">
+        {assigned ? assigned.name : "—"}
+      </span>
+    );
+  }
+  return (
+    <select
+      value={order.assignedModeratorId ?? ""}
+      disabled={busy}
+      onChange={async (e) => {
+        const val = e.target.value || null;
+        setBusy(true);
+        try {
+          await apiAssignOrder(order.id, val);
+          onChanged();
+        } catch {
+          // ignore
+        } finally {
+          setBusy(false);
+        }
+      }}
+      className="rounded-lg border border-border bg-white px-2 py-1.5 text-xs font-medium text-slate-700 shadow-sm disabled:opacity-50"
+    >
+      <option value="">— Unassigned —</option>
+      {moderators.map((m) => (
+        <option key={m.id} value={m.id}>
+          {m.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 const adminDocLinkClass =
   "inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-xs font-semibold leading-none";
 
@@ -148,6 +196,7 @@ export function AdminOrdersPage() {
     { key: "deliveryDate", label: "Delivery" },
     { key: "deliveredAt", label: "Delivered" },
     { key: "status", label: "Status" },
+    { key: "moderator", label: "Moderator" },
     { key: "challan", label: "Challan" },
     { key: "purchaseInvoice", label: "Purchase invoice" },
     { key: "billingInvoice", label: "Billing invoice" },
@@ -159,6 +208,7 @@ export function AdminOrdersPage() {
   } = useColumnVisibility(ORDER_COLS);
 
   const getOrderData = () => {
+    const accounts = listAccounts();
     const headers = ORDER_COLS.filter((c) => orderColVisible(c.key)).map(
       (c) => c.label,
     );
@@ -170,6 +220,10 @@ export function AdminOrdersPage() {
       if (orderColVisible("deliveryDate")) cols.push(o.deliveryDate ?? "");
       if (orderColVisible("deliveredAt")) cols.push(o.deliveredAt ?? "");
       if (orderColVisible("status")) cols.push(o.status);
+      if (orderColVisible("moderator")) {
+        const mod = accounts.find((a) => a.id === o.assignedModeratorId);
+        cols.push(mod ? mod.name : "");
+      }
       if (orderColVisible("challan"))
         cols.push(o.challanGenerated ? "Yes" : "No");
       if (orderColVisible("purchaseInvoice"))
@@ -502,6 +556,9 @@ export function AdminOrdersPage() {
                     />
                   </th>
                 )}
+                {orderColVisible("moderator") && (
+                  <th className="px-4 py-3 min-w-[160px]">Moderator</th>
+                )}
                 {orderColVisible("challan") && (
                   <th className="px-4 py-3">Challan</th>
                 )}
@@ -559,6 +616,14 @@ export function AdminOrdersPage() {
                   {orderColVisible("status") && (
                     <td className="px-4 py-3 align-middle">
                       <StatusBadge status={o.status} />
+                    </td>
+                  )}
+                  {orderColVisible("moderator") && (
+                    <td className="px-4 py-3 align-middle">
+                      <AssignModeratorSelect
+                        order={o}
+                        onChanged={() => void loadOrders(listLoadOpts)}
+                      />
                     </td>
                   )}
                   {orderColVisible("challan") && (
@@ -821,6 +886,15 @@ export function AdminOrdersPage() {
               </p>
               <div className="text-sm text-slate-800">
                 <OrderDeliveredAtCell order={o} />
+              </div>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Moderator
+              </p>
+              <div className="mt-1">
+                <AssignModeratorSelect
+                  order={o}
+                  onChanged={() => void loadOrders(listLoadOpts)}
+                />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
                 {o.challanGenerated ? (

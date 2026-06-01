@@ -1,16 +1,3 @@
-import { Link, useLocation } from "react-router-dom";
-import { useOrders } from "../context/OrdersContext";
-import { StatusBadge } from "../components/StatusBadge";
-import { useEffect, useMemo, useState } from "react";
-import { SortableHeader, nextSort, sortRows, type SortDir } from "../components/SortableHeader";
-import { ExportToolbar, useColumnVisibility } from "../components/ExportToolbar";
-import { PaginationControls } from "../components/PaginationControls";
-import { ClipboardCheck, Calendar, FileBadge2, FileText, MoreVertical, ReceiptText, Search } from "lucide-react";
-import { OrderDeliveredAtCell, OrderScheduledDeliveryCell } from "../components/OrderDeliveryTableCells";
-import { formatDateDdMmYyyyOrDash } from "../lib/formatDisplayDate";
-import { NOTIFICATIONS_EVENT, readModeratorSeenOrderIds } from "../lib/orderNotifications";
-import { hasPurchaseInvoice } from "../lib/invoiceFlow";
-import type { OrderStatus } from "../types";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,11 +10,48 @@ import {
   tableActionsTightSingle,
   tableActionsWideSingle,
 } from "@/lib/tableActionsLayout";
+import {
+  Calendar,
+  ClipboardCheck,
+  FileBadge2,
+  FileText,
+  MoreVertical,
+  ReceiptText,
+  Search,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import {
+  ExportToolbar,
+  useColumnVisibility,
+} from "../components/ExportToolbar";
+import {
+  OrderDeliveredAtCell,
+  OrderScheduledDeliveryCell,
+} from "../components/OrderDeliveryTableCells";
+import { PaginationControls } from "../components/PaginationControls";
+import {
+  SortableHeader,
+  nextSort,
+  sortRows,
+  type SortDir,
+} from "../components/SortableHeader";
 import { StatMetricCard } from "../components/StatMetricCard";
+import { StatusBadge } from "../components/StatusBadge";
+import { useAuth } from "../context/AuthContext";
+import { useOrders } from "../context/OrdersContext";
 import { apiEnabled } from "../lib/api";
+import { formatDateDdMmYyyyOrDash } from "../lib/formatDisplayDate";
+import { hasPurchaseInvoice } from "../lib/invoiceFlow";
+import {
+  NOTIFICATIONS_EVENT,
+  readModeratorSeenOrderIds,
+} from "../lib/orderNotifications";
+import type { OrderStatus } from "../types";
 
 export function ModeratorOrdersPage() {
   const { orders, loadOrders } = useOrders();
+  const { user } = useAuth();
   const location = useLocation();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | OrderStatus>("all");
@@ -66,10 +90,16 @@ export function ModeratorOrdersPage() {
     { key: "purchaseBalance", label: "Purchase balance" },
     { key: "purchasePayment", label: "Purchase payment" },
   ];
-  const { visibleColumns: modVisibleCols, toggleColumn: toggleModCol, isVisible: modColVisible } = useColumnVisibility(MOD_COLS);
+  const {
+    visibleColumns: modVisibleCols,
+    toggleColumn: toggleModCol,
+    isVisible: modColVisible,
+  } = useColumnVisibility(MOD_COLS);
 
   const getModData = () => {
-    const headers = MOD_COLS.filter((c) => modColVisible(c.key)).map((c) => c.label);
+    const headers = MOD_COLS.filter((c) => modColVisible(c.key)).map(
+      (c) => c.label,
+    );
     const rows = sorted.map((o) => {
       const cols: string[] = [];
       if (modColVisible("orderNo")) cols.push(o.orderNo);
@@ -79,8 +109,10 @@ export function ModeratorOrdersPage() {
       if (modColVisible("delivery")) cols.push(o.deliveryDate ?? "");
       if (modColVisible("deliveredAt")) cols.push(o.deliveredAt ?? "");
       if (modColVisible("status")) cols.push(o.status);
-      if (modColVisible("documents")) cols.push(o.challanGenerated ? "Challan" : "—");
-      if (modColVisible("purchaseBalance")) cols.push(String(o.purchaseSubtotal ?? "—"));
+      if (modColVisible("documents"))
+        cols.push(o.challanGenerated ? "Challan" : "—");
+      if (modColVisible("purchaseBalance"))
+        cols.push(String(o.purchaseSubtotal ?? "—"));
       if (modColVisible("purchasePayment")) cols.push("—");
       return cols;
     });
@@ -88,7 +120,9 @@ export function ModeratorOrdersPage() {
   };
   const [adjustOrderId, setAdjustOrderId] = useState<string | null>(null);
   const [adjustInput, setAdjustInput] = useState("");
-  const [purchasePayments, setPurchasePayments] = useState<Record<string, number>>(() => {
+  const [purchasePayments, setPurchasePayments] = useState<
+    Record<string, number>
+  >(() => {
     try {
       const raw = localStorage.getItem("gom_purchase_payments");
       if (!raw) return {};
@@ -110,7 +144,8 @@ export function ModeratorOrdersPage() {
   }, []);
 
   const mode = useMemo<"orders" | "purchase">(() => {
-    if (location.pathname.startsWith("/moderator/purchase-invoices")) return "purchase";
+    if (location.pathname.startsWith("/moderator/purchase-invoices"))
+      return "purchase";
     return "orders";
   }, [location.pathname]);
 
@@ -121,12 +156,18 @@ export function ModeratorOrdersPage() {
   }, [mode]);
 
   useEffect(() => {
-    localStorage.setItem("gom_purchase_payments", JSON.stringify(purchasePayments));
+    localStorage.setItem(
+      "gom_purchase_payments",
+      JSON.stringify(purchasePayments),
+    );
   }, [purchasePayments]);
 
   const modSeen = useMemo(() => readModeratorSeenOrderIds(), [seenTick]);
-  const isNewSubmitted = (id: string, status: string) => status === "submitted" && !modSeen.has(id);
-  const adjustOrder = adjustOrderId ? orders.find((o) => o.id === adjustOrderId) ?? null : null;
+  const isNewSubmitted = (id: string, status: string) =>
+    status === "submitted" && !modSeen.has(id);
+  const adjustOrder = adjustOrderId
+    ? (orders.find((o) => o.id === adjustOrderId) ?? null)
+    : null;
 
   function purchaseAmountOf(orderId: string): number {
     const order = orders.find((o) => o.id === orderId);
@@ -142,7 +183,9 @@ export function ModeratorOrdersPage() {
     return Math.max(0, purchaseAmountOf(orderId) - paidPurchaseOf(orderId));
   }
 
-  function purchasePaymentStatusOf(orderId: string): "Paid" | "Partial" | "Pending" {
+  function purchasePaymentStatusOf(
+    orderId: string,
+  ): "Paid" | "Partial" | "Pending" {
     const total = purchaseAmountOf(orderId);
     if (total <= 0) return "Pending";
     const paid = paidPurchaseOf(orderId);
@@ -158,22 +201,27 @@ export function ModeratorOrdersPage() {
     if (!Number.isFinite(amount) || amount < 0) return;
     const rounded = Math.round(amount * 100) / 100;
     const total = purchaseAmountOf(adjustOrder.id);
-    setPurchasePayments((prev) => ({ ...prev, [adjustOrder.id]: Math.min(total, rounded) }));
+    setPurchasePayments((prev) => ({
+      ...prev,
+      [adjustOrder.id]: Math.min(total, rounded),
+    }));
     setAdjustOrderId(null);
     setAdjustInput("");
   }
 
   const customers = useMemo(
     () =>
-      [...new Set(orders.map((o) => o.contactPerson?.trim()).filter(Boolean))].sort((a, b) =>
-        String(a).localeCompare(String(b)),
-      ),
+      [
+        ...new Set(orders.map((o) => o.contactPerson?.trim()).filter(Boolean)),
+      ].sort((a, b) => String(a).localeCompare(String(b))),
     [orders],
   );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return orders.filter((o) => {
+      // Moderator only sees orders assigned to them
+      if (user && o.assignedModeratorId !== user.id) return false;
       if (mode === "purchase" && o.status === "draft") return false;
       if (status !== "all" && o.status !== status) return false;
       if (customer !== "all" && o.contactPerson !== customer) return false;
@@ -189,19 +237,33 @@ export function ModeratorOrdersPage() {
         o.deliveryAddress.toLowerCase().includes(q)
       );
     });
-  }, [orders, query, status, customer, docFilter, mode, purchasePayments]);
+  }, [
+    orders,
+    query,
+    status,
+    customer,
+    docFilter,
+    mode,
+    purchasePayments,
+    user,
+  ]);
 
   const sorted = useMemo(() => {
     if (!sortKey) return filtered;
-    return sortRows(filtered, sortKey as keyof typeof filtered[0], sortDir);
+    return sortRows(filtered, sortKey as keyof (typeof filtered)[0], sortDir);
   }, [filtered, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const safePage = Math.min(page, totalPages);
   const pageList = sorted.slice((safePage - 1) * pageSize, safePage * pageSize);
-  const challanCount = orders.filter((o) => o.challanGenerated).length;
-  const invoiceCount = orders.filter((o) => o.status === "delivered").length;
-  const underReview = orders.filter((o) => o.status === "under_review").length;
+  const myOrders = orders.filter(
+    (o) => !user || o.assignedModeratorId === user.id,
+  );
+  const challanCount = myOrders.filter((o) => o.challanGenerated).length;
+  const invoiceCount = myOrders.filter((o) => o.status === "delivered").length;
+  const underReview = myOrders.filter(
+    (o) => o.status === "under_review",
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -297,7 +359,9 @@ export function ModeratorOrdersPage() {
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-slate-500">
-              Showing <strong className="text-slate-700">{sorted.length}</strong> of {orders.length} orders
+              Showing{" "}
+              <strong className="text-slate-700">{sorted.length}</strong> of{" "}
+              {myOrders.length} orders
             </p>
             <ExportToolbar
               filename="moderator-orders-export"
@@ -309,109 +373,211 @@ export function ModeratorOrdersPage() {
           </div>
         </div>
 
-        <div className={tableActionsContainerClass("table-scroll hidden md:block")}>
+        <div
+          className={tableActionsContainerClass("table-scroll hidden md:block")}
+        >
           <table className="min-w-[1180px] w-full text-left text-sm lg:text-base">
-          <thead className="bg-muted text-sm uppercase tracking-wide text-foreground">
-            <tr>
-              {modColVisible("orderNo") && <th className="px-4 py-3"><SortableHeader label="Order" field="orderNo" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} /></th>}
-              {modColVisible("contactPerson") && <th className="px-4 py-3"><SortableHeader label="Customer" field="contactPerson" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} /></th>}
-              {modColVisible("orderDate") && <th className="px-4 py-3 whitespace-nowrap"><SortableHeader label="Order date" field="orderDate" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} /></th>}
-              {modColVisible("deliveryDate") && <th className="px-4 py-3 whitespace-nowrap"><SortableHeader label="Delivery date" field="deliveryDate" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} /></th>}
-              {modColVisible("delivery") && <th className="px-4 py-3 min-w-[160px]">Delivery</th>}
-              {modColVisible("deliveredAt") && <th className="px-4 py-3 min-w-[160px]"><SortableHeader label="Delivered" field="deliveredAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} /></th>}
-              {modColVisible("status") && <th className="px-4 py-3"><SortableHeader label="Status" field="status" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} /></th>}
-              {modColVisible("documents") && <th className="px-4 py-3">Documents</th>}
-              {modColVisible("purchaseBalance") && <th className="px-4 py-3 text-right">Purchase balance</th>}
-              {modColVisible("purchasePayment") && <th className="px-4 py-3">Purchase payment</th>}
-              <th className="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pageList.map((o) => (
-              <tr key={o.id} className="border-t border-border bg-card">
-                <td className="px-4 py-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-base font-semibold text-slate-900">{o.orderNo}</span>
-                    {isNewSubmitted(o.id, o.status) ? (
-                      <span className="rounded-full bg-emerald-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-950 shadow-sm">
-                        New
+            <thead className="bg-muted text-sm uppercase tracking-wide text-foreground">
+              <tr>
+                {modColVisible("orderNo") && (
+                  <th className="px-4 py-3">
+                    <SortableHeader
+                      label="Order"
+                      field="orderNo"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+                )}
+                {modColVisible("contactPerson") && (
+                  <th className="px-4 py-3">
+                    <SortableHeader
+                      label="Customer"
+                      field="contactPerson"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+                )}
+                {modColVisible("orderDate") && (
+                  <th className="px-4 py-3 whitespace-nowrap">
+                    <SortableHeader
+                      label="Order date"
+                      field="orderDate"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+                )}
+                {modColVisible("deliveryDate") && (
+                  <th className="px-4 py-3 whitespace-nowrap">
+                    <SortableHeader
+                      label="Delivery date"
+                      field="deliveryDate"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+                )}
+                {modColVisible("delivery") && (
+                  <th className="px-4 py-3 min-w-[160px]">Delivery</th>
+                )}
+                {modColVisible("deliveredAt") && (
+                  <th className="px-4 py-3 min-w-[160px]">
+                    <SortableHeader
+                      label="Delivered"
+                      field="deliveredAt"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+                )}
+                {modColVisible("status") && (
+                  <th className="px-4 py-3">
+                    <SortableHeader
+                      label="Status"
+                      field="status"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  </th>
+                )}
+                {modColVisible("documents") && (
+                  <th className="px-4 py-3">Documents</th>
+                )}
+                {modColVisible("purchaseBalance") && (
+                  <th className="px-4 py-3 text-right">Purchase balance</th>
+                )}
+                {modColVisible("purchasePayment") && (
+                  <th className="px-4 py-3">Purchase payment</th>
+                )}
+                <th className="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageList.map((o) => (
+                <tr key={o.id} className="border-t border-border bg-card">
+                  <td className="px-4 py-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-base font-semibold text-slate-900">
+                        {o.orderNo}
                       </span>
-                    ) : null}
-                  </div>
-                </td>
-                <td className="px-4 py-4 text-base font-semibold text-slate-800">{o.contactPerson}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-800">{formatDateDdMmYyyyOrDash(o.orderDate)}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-800">{formatDateDdMmYyyyOrDash(o.deliveryDate)}</td>
-                <td className="px-4 py-3 text-sm text-slate-800">
-                  <OrderScheduledDeliveryCell order={o} />
-                </td>
-                <td className="px-4 py-3 text-sm text-slate-800">
-                  <OrderDeliveredAtCell order={o} />
-                </td>
-                <td className="px-4 py-3">
-                  <StatusBadge status={o.status} />
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {o.challanGenerated ? (
-                      <Link
-                        to={`/moderator/challans/${o.id}`}
-                        className="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+                      {isNewSubmitted(o.id, o.status) ? (
+                        <span className="rounded-full bg-emerald-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-950 shadow-sm">
+                          New
+                        </span>
+                      ) : null}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 text-base font-semibold text-slate-800">
+                    {o.contactPerson}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-800">
+                    {formatDateDdMmYyyyOrDash(o.orderDate)}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-800">
+                    {formatDateDdMmYyyyOrDash(o.deliveryDate)}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-800">
+                    <OrderScheduledDeliveryCell order={o} />
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-800">
+                    <OrderDeliveredAtCell order={o} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusBadge status={o.status} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {o.challanGenerated ? (
+                        <Link
+                          to={`/moderator/challans/${o.id}`}
+                          className="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+                        >
+                          View challan
+                        </Link>
+                      ) : null}
+                      {hasPurchaseInvoice(o) ? (
+                        <Link
+                          to={`/moderator/purchase-invoices/${o.id}`}
+                          className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+                        >
+                          View purchase invoice
+                        </Link>
+                      ) : null}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right font-semibold">
+                    ৳{" "}
+                    {Math.round(purchaseBalanceOf(o.id)).toLocaleString(
+                      "en-US",
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        purchasePaymentStatusOf(o.id) === "Paid"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : purchasePaymentStatusOf(o.id) === "Partial"
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {purchasePaymentStatusOf(o.id)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className={tableActionsWideSingle()}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-primary hover:text-primary"
+                        asChild
+                        title="Open order"
                       >
-                        View challan
-                      </Link>
-                    ) : null}
-                    {hasPurchaseInvoice(o) ? (
-                      <Link
-                        to={`/moderator/purchase-invoices/${o.id}`}
-                        className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100"
-                      >
-                        View purchase invoice
-                      </Link>
-                    ) : null}
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-right font-semibold">
-                  ৳ {Math.round(purchaseBalanceOf(o.id)).toLocaleString("en-US")}
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      purchasePaymentStatusOf(o.id) === "Paid"
-                        ? "bg-emerald-100 text-emerald-800"
-                        : purchasePaymentStatusOf(o.id) === "Partial"
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    {purchasePaymentStatusOf(o.id)}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className={tableActionsWideSingle()}>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:text-primary" asChild title="Open order">
-                      <Link to={`/moderator/orders/${o.id}`} aria-label="Open order">
-                        <FileBadge2 className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                  <div className={tableActionsTightSingle()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" aria-label="Order actions">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40">
-                        <DropdownMenuItem asChild>
-                          <Link to={`/moderator/orders/${o.id}`} className="flex cursor-pointer items-center gap-2">
-                            <FileBadge2 className="h-4 w-4" />
-                            Open
-                          </Link>
-                        </DropdownMenuItem>
+                        <Link
+                          to={`/moderator/orders/${o.id}`}
+                          aria-label="Open order"
+                        >
+                          <FileBadge2 className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </div>
+                    <div className={tableActionsTightSingle()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 text-muted-foreground"
+                            aria-label="Order actions"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem asChild>
+                            <Link
+                              to={`/moderator/orders/${o.id}`}
+                              className="flex cursor-pointer items-center gap-2"
+                            >
+                              <FileBadge2 className="h-4 w-4" />
+                              Open
+                            </Link>
+                          </DropdownMenuItem>
                           {hasPurchaseInvoice(o) ? (
                             <DropdownMenuItem asChild>
-                              <Link to={`/moderator/purchase-invoices/${o.id}`} className="flex cursor-pointer items-center gap-2">
+                              <Link
+                                to={`/moderator/purchase-invoices/${o.id}`}
+                                className="flex cursor-pointer items-center gap-2"
+                              >
                                 <FileBadge2 className="h-4 w-4" />
                                 Purchase invoice
                               </Link>
@@ -421,30 +587,39 @@ export function ModeratorOrdersPage() {
                             <DropdownMenuItem
                               onClick={() => {
                                 setAdjustOrderId(o.id);
-                                setAdjustInput(String(Math.round(paidPurchaseOf(o.id))));
+                                setAdjustInput(
+                                  String(Math.round(paidPurchaseOf(o.id))),
+                                );
                               }}
                             >
                               Adjust payment
                             </DropdownMenuItem>
                           ) : null}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
           </table>
           {pageList.length === 0 ? (
-            <p className="px-4 py-10 text-center text-sm text-slate-500">No orders match your search or filters.</p>
+            <p className="px-4 py-10 text-center text-sm text-slate-500">
+              No orders match your search or filters.
+            </p>
           ) : null}
         </div>
         <div className="space-y-3 p-3 md:hidden">
           {pageList.map((o) => (
-            <div key={o.id} className="rounded-2xl border border-border bg-white p-3.5 shadow-sm">
+            <div
+              key={o.id}
+              className="rounded-2xl border border-border bg-white p-3.5 shadow-sm"
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-mono text-sm font-semibold text-slate-900">{o.orderNo}</p>
+                  <p className="font-mono text-sm font-semibold text-slate-900">
+                    {o.orderNo}
+                  </p>
                   {isNewSubmitted(o.id, o.status) ? (
                     <span className="rounded-full bg-emerald-400 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-950">
                       New
@@ -453,22 +628,38 @@ export function ModeratorOrdersPage() {
                 </div>
                 <StatusBadge status={o.status} />
               </div>
-              <p className="mt-2 text-sm font-medium text-slate-700">Customer: {o.contactPerson}</p>
-              <p className="mt-1 text-xs text-slate-600">
-                Order date: <span className="font-medium text-slate-800">{formatDateDdMmYyyyOrDash(o.orderDate)}</span>
-                {" · "}
-                Delivery date: <span className="font-medium text-slate-800">{formatDateDdMmYyyyOrDash(o.deliveryDate)}</span>
+              <p className="mt-2 text-sm font-medium text-slate-700">
+                Customer: {o.contactPerson}
               </p>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Delivery</p>
+              <p className="mt-1 text-xs text-slate-600">
+                Order date:{" "}
+                <span className="font-medium text-slate-800">
+                  {formatDateDdMmYyyyOrDash(o.orderDate)}
+                </span>
+                {" · "}
+                Delivery date:{" "}
+                <span className="font-medium text-slate-800">
+                  {formatDateDdMmYyyyOrDash(o.deliveryDate)}
+                </span>
+              </p>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Delivery
+              </p>
               <div className="text-sm text-slate-800">
                 <OrderScheduledDeliveryCell order={o} />
               </div>
-              <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Delivered</p>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Delivered
+              </p>
               <div className="text-sm text-slate-800">
                 <OrderDeliveredAtCell order={o} />
               </div>
               <p className="mt-1 text-sm text-slate-600">
-                Balance: <span className="font-semibold text-slate-900">৳ {Math.round(purchaseBalanceOf(o.id)).toLocaleString("en-US")}</span>
+                Balance:{" "}
+                <span className="font-semibold text-slate-900">
+                  ৳{" "}
+                  {Math.round(purchaseBalanceOf(o.id)).toLocaleString("en-US")}
+                </span>
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
                 {o.challanGenerated ? (
@@ -532,7 +723,9 @@ export function ModeratorOrdersPage() {
             </div>
           ))}
           {pageList.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-500">No orders match your search or filters.</p>
+            <p className="py-8 text-center text-sm text-slate-500">
+              No orders match your search or filters.
+            </p>
           ) : null}
         </div>
         {sorted.length > 0 ? (
@@ -552,7 +745,9 @@ export function ModeratorOrdersPage() {
       {adjustOrder ? (
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/35 p-4">
           <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <h3 className="text-xl font-bold text-slate-900">Adjust purchase payment</h3>
+            <h3 className="text-xl font-bold text-slate-900">
+              Adjust purchase payment
+            </h3>
             <p className="mt-1 text-sm text-slate-600">
               {adjustOrder.orderNo} · {adjustOrder.contactPerson}
             </p>
@@ -560,19 +755,28 @@ export function ModeratorOrdersPage() {
               <div className="rounded-lg bg-slate-50 p-3">
                 <p className="text-xs text-slate-500">Purchase total</p>
                 <p className="text-sm font-semibold text-slate-900">
-                  ৳ {Math.round(purchaseAmountOf(adjustOrder.id)).toLocaleString("en-US")}
+                  ৳{" "}
+                  {Math.round(purchaseAmountOf(adjustOrder.id)).toLocaleString(
+                    "en-US",
+                  )}
                 </p>
               </div>
               <div className="rounded-lg bg-slate-50 p-3">
                 <p className="text-xs text-slate-500">Paid</p>
                 <p className="text-sm font-semibold text-slate-900">
-                  ৳ {Math.round(paidPurchaseOf(adjustOrder.id)).toLocaleString("en-US")}
+                  ৳{" "}
+                  {Math.round(paidPurchaseOf(adjustOrder.id)).toLocaleString(
+                    "en-US",
+                  )}
                 </p>
               </div>
               <div className="rounded-lg bg-slate-50 p-3">
                 <p className="text-xs text-slate-500">Pending</p>
                 <p className="text-sm font-semibold text-slate-900">
-                  ৳ {Math.round(purchaseBalanceOf(adjustOrder.id)).toLocaleString("en-US")}
+                  ৳{" "}
+                  {Math.round(purchaseBalanceOf(adjustOrder.id)).toLocaleString(
+                    "en-US",
+                  )}
                 </p>
               </div>
             </div>

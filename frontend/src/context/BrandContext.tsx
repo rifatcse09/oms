@@ -9,6 +9,8 @@ export interface BrandSettings {
   companyNameBn: string;
   companyAddress: string;
   hotline: string;
+  /** Multi-line description shown on the delivery challan header (one line per \n). */
+  challanDescription: string;
 }
 
 export const BRAND_DEFAULTS: BrandSettings = {
@@ -17,6 +19,8 @@ export const BRAND_DEFAULTS: BrandSettings = {
   companyNameBn: "হোসেন মিট অ্যান্ড কো.",
   companyAddress: "ভুলতা-গাউসিয়া, রূপগঞ্জ, নারায়ণগঞ্জ — ১৪৬০",
   hotline: "+৮৮০১৫৭১ ২২৭৫৮৮",
+  challanDescription:
+    "মাংসসহ গৃহের সব ধরনের মুদি সামগ্রী,\nপ্রস্তুত ও বাজার উপযোগী পণ্য\nসরবরাহ করা হয় খুচরা / পাইকারী\nআপনার দোরগোড়ায় ডেলিভারি করা হয়।",
 };
 
 function loadSettings(): BrandSettings {
