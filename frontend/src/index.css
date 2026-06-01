@@ -1,0 +1,208 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    /* Solid near-black primary (SaaS-style CTAs), not gradient hues */
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 47.4% 11.2%;
+    --radius: 0.5rem;
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+html {
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.font-bn {
+  font-family: "Noto Sans Bengali", "Hind Siliguri", Inter, sans-serif;
+}
+
+/* Neutral scrollbars for table / panel scroll (avoid vivid purple browser defaults) */
+@layer components {
+  .table-scroll {
+    overflow: auto;
+    scrollbar-color: hsl(215 16% 65% / 0.55) hsl(210 40% 96%);
+    scrollbar-width: thin;
+  }
+
+  .table-scroll::-webkit-scrollbar {
+    height: 10px;
+    width: 10px;
+  }
+
+  .table-scroll::-webkit-scrollbar-track {
+    background: hsl(210 40% 96%);
+    border-radius: 6px;
+  }
+
+  .table-scroll::-webkit-scrollbar-thumb {
+    background: hsl(215 16% 65% / 0.55);
+    border-radius: 6px;
+    border: 2px solid hsl(210 40% 96%);
+  }
+
+  .table-scroll::-webkit-scrollbar-thumb:hover {
+    background: hsl(215 16% 47% / 0.65);
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm 14mm 14mm;
+  }
+
+  /* No top margin on the very first page so the header sits at the top */
+  @page :first {
+    margin-top: 0;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body.print-isolated > * {
+    visibility: hidden;
+  }
+
+  body.print-isolated .print-invoice-only,
+  body.print-isolated .print-invoice-only *,
+  body.print-isolated .print-doc-only,
+  body.print-isolated .print-doc-only * {
+    visibility: visible;
+  }
+
+  /* ── Invoice ──────────────────────────────────────────────────── */
+  body.print-isolated .print-invoice-only {
+    position: static;
+    width: 100%;
+    max-width: none;
+    margin: 0 !important;
+    padding: 0 !important;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  /*
+   * Do NOT use position:fixed for document headers in print. Browsers repeat the fixed
+   * block on every sheet while body margin-top applies only once — rows on page 2+
+   * hide under the header. The company block prints once; inner table thead repeats
+   * via table-header-group.
+   */
+  body.print-isolated .print-invoice-only .print-invoice-header {
+    position: static;
+    padding: 0 0 4mm;
+    border-bottom: 1px solid #e2e8f0;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  body.print-isolated .print-invoice-only .print-invoice-body {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  /* Keep each invoice item row intact across page breaks */
+  body.print-isolated .print-invoice-only table tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* ── Challan ──────────────────────────────────────────────────── */
+  body.print-isolated .print-doc-only {
+    position: static;
+    width: 100%;
+    max-width: none;
+    margin: 0 !important;
+    padding: 0 !important;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  /*
+   * Do NOT use position:fixed for the company header in print. Let it flow
+   * normally on page 1; the @page margin gives clean spacing on page 2+.
+   */
+  body.print-isolated .print-doc-only .print-challan-header {
+    position: static;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  body.print-isolated .print-doc-only .print-challan-body {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  body.print-isolated .print-doc-only .print-challan-footer {
+    page-break-before: avoid;
+    break-before: avoid;
+  }
+
+  /* Keep each item row intact — no row split across a page break */
+  body.print-isolated .print-doc-only table tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
