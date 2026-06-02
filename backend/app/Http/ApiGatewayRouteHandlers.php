@@ -1207,6 +1207,59 @@ if (preg_match('#^/api/v1/orders/(\d+)/billing-invoice$#', $path, $m) === 1 && $
     json_response(201, ['data' => $invoice]);
 }
 
+if (preg_match('#^/api/v1/orders/(\d+)/assign$#', $path, $m) === 1 && $method === 'POST') {
+    $user = require_auth();
+    require_role($user, ['admin', 'master_admin', 'moderator']);
+    $orderId = (int)$m[1];
+
+    $getOrder = db()->prepare('SELECT * FROM orders WHERE id = :id AND is_active = true LIMIT 1');
+    $getOrder->execute(['id' => $orderId]);
+    $order = $getOrder->fetch();
+    if (!$order) {
+        json_response(404, ['message' => 'Order not found']);
+    }
+    if (table_has_column('orders', 'deleted_at') && ! empty($order['deleted_at'])) {
+        json_response(404, ['message' => 'Order not found']);
+    }
+
+    $body = json_input();
+    $moderatorIdRaw = $body['moderatorId'] ?? $body['moderator_id'] ?? null;
+    $moderatorId = null;
+    if ($moderatorIdRaw !== null && $moderatorIdRaw !== '') {
+        if (!is_numeric($moderatorIdRaw)) {
+            json_response(422, ['message' => 'moderatorId must be a valid moderator user id or null.']);
+        }
+        $moderatorId = (int)$moderatorIdRaw;
+        if ($moderatorId <= 0) {
+            json_response(422, ['message' => 'moderatorId must be a valid moderator user id or null.']);
+        }
+
+        $checkModerator = db()->prepare("SELECT id FROM users WHERE id = :id AND role = 'moderator' AND is_active = true LIMIT 1");
+        $checkModerator->execute(['id' => $moderatorId]);
+        if (!$checkModerator->fetch()) {
+            json_response(422, ['message' => 'Selected moderator does not exist or is inactive.']);
+        }
+    }
+
+    db()->prepare('UPDATE orders SET assigned_moderator_id = :mid, updated_at = NOW() WHERE id = :id')
+        ->execute([
+            'mid' => $moderatorId,
+            'id' => $orderId,
+        ]);
+
+    log_activity((int)$user['id'], 'order', $orderId, 'order_assignment_updated', [
+        'assignedModeratorId' => isset($order['assigned_moderator_id']) && $order['assigned_moderator_id'] !== null
+            ? (int)$order['assigned_moderator_id']
+            : null,
+    ], [
+        'assignedModeratorId' => $moderatorId,
+        'orderNo' => (string)($order['order_no'] ?? ''),
+    ]);
+
+    $getOrder->execute(['id' => $orderId]);
+    json_response(200, ['data' => read_order($getOrder->fetch())]);
+}
+
 if (preg_match('#^/api/v1/orders/(\d+)/mark-delivered$#', $path, $m) === 1 && $method === 'POST') {
     $user = require_auth();
     require_role($user, ['admin', 'master_admin', 'moderator']);

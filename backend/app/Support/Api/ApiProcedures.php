@@ -569,6 +569,9 @@ function read_order(array $row): array {
     $out = [
         'id' => (string)$orderId,
         'ownerId' => (string)$row['owner_id'],
+        'assignedModeratorId' => table_has_column('orders', 'assigned_moderator_id') && isset($row['assigned_moderator_id']) && $row['assigned_moderator_id'] !== null
+            ? (string)$row['assigned_moderator_id']
+            : null,
         'orderNo' => $row['order_no'],
         'orderDate' => $row['order_date'],
         'createdAt' => $row['created_at'] ?? null,

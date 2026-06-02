@@ -200,12 +200,20 @@ function normalizeOrder(order: Record<string, unknown>): Order {
   );
 
   const createdByIdRaw = order.createdById ?? order.created_by_id;
+  const assignedModeratorIdRaw =
+    order.assignedModeratorId ?? order.assigned_moderator_id;
   const createdByNameRaw = order.createdByName ?? order.created_by_user_name;
   const createdByRoleRaw = order.createdByRole ?? order.created_by_user_role;
 
   return {
     id: String(order.id ?? ""),
     ownerId: String(order.ownerId ?? order.owner_id ?? ""),
+    assignedModeratorId:
+      assignedModeratorIdRaw === null ||
+      assignedModeratorIdRaw === undefined ||
+      String(assignedModeratorIdRaw).trim() === ""
+        ? null
+        : String(assignedModeratorIdRaw),
     createdById:
       createdByIdRaw === null ||
       createdByIdRaw === undefined ||
