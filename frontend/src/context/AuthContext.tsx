@@ -13,7 +13,9 @@ import {
   apiListUsers,
   apiLogin,
   apiRegister,
+  apiToggleBlockUser,
   apiUpdateProfile,
+  apiUpdateUserRole,
 } from "../lib/api";
 import { flagNewUserSignup } from "../lib/orderNotifications";
 import { clearPresence } from "../lib/userPresence";

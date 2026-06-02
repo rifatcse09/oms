@@ -178,7 +178,6 @@ export function AdminOrdersPage() {
   const [listError, setListError] = useState<string | null>(null);
   const [showDeletedOrders, setShowDeletedOrders] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
-  const [assignTarget, setAssignTarget] = useState<Order | null>(null);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
